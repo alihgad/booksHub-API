@@ -105,7 +105,7 @@ export const getBooks = async (req, res) => {
             } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
         } else {
             try {
-                data = await book.find()
+                data = await book.find().maxTimeMS(30000);
             } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
         }
         res.status(200).json({ msg: 'done', data })
