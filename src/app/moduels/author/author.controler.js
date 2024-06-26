@@ -1,6 +1,6 @@
 import author from "../../DB/models/author.js"
 
-    // add bulk for testing pagination
+// add bulk for testing pagination
 // import { bookAuthors } from "../book/book.controler.js";
 
 // let result = bookAuthors.map((man)=>{
@@ -45,64 +45,82 @@ export const addauthor = (req, res) => {
 
 export const getauthors = async (req, res) => {
 
-    let { page } = req.query
-    let search = req.query?.search
 
 
-    if (page) {
-        let data 
-        if (search) {
-            try {
-                 data = await author.find({
-                    $or: [
-                        {name: { $regex: search, $options: "i" }},
-                        {bio: { $regex: search, $options: "i" }}
-                    ]
-                }).skip((page-1)*20).limit(20).lean()
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        } else {
-            try {
-                 data = await author.find().skip((page - 1) * 20).limit(20)
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        }
-
-        if (data.length == 0 ) {
-            return res.json({ msg: `page not avilabel` })
-        }
+    try {
+        let data = await author.find()
         res.status(200).json({ msg: 'done', data })
 
-    } else {
-        let data 
-        if (search) {
-            try {
-                 data = await author.find(
-                    {
-                        $or: [
-                            {
-                                name: { $regex: search, $options: 'i' }
-                            },
-                            {
-                                bio: { $regex: search, $options: 'i' }
-                            }
-                        ]
-                    }
-                )
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        } else {
-            try {
-                data = await author.find()
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        }
-       
-        res.status(200).json({ msg: 'done', data })
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
 
-    }
 
 
 }
 
+
+export const getAuthorsPagenation = async (req, res) => {
+    let { page } = req.params
+
+    try {
+        let data = await author.find().skip((page - 1) * 20).limit(20)
+        if (data.length == 0) {
+            return res.json({ msg: `page not avilabel` })
+
+        }
+
+        res.status(200).json({ msg: 'done', data })
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+}
+
+export const getAuthorsSearch = async (req, res) => {
+    let search = req.query?.search
+
+    try {
+        let data = await author.find(
+            {
+                $or: [
+                    {
+                        name: { $regex: search, $options: 'i' }
+                    },
+                    {
+                        bio: { $regex: search, $options: 'i' }
+                    }
+                ]
+            }
+        )
+
+        if(data.length == 0) {
+            res.status(201).json({ msg: 'data not found'})
+        }
+
+        res.status(200).json({ msg: 'done', data })
+
+
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+
+}
+
+export const getAuthorsPaginationAndSearch = async (req, res) => {
+    let { page } = req.params
+    let search = req.query?.search
+    try {
+       let data = await author.find({
+            $or: [
+                { name: { $regex: search, $options: "i" } },
+                { bio: { $regex: search, $options: "i" } }
+            ]
+        }).skip((page - 1) * 20).limit(20).lean()
+
+        if (data.length == 0) {
+            return res.json({ msg: `page not avilabel` })
+        }
+        res.status(200).json({ msg: 'done', data })
+
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+}
+
 export const getauthor = (req, res) => {
-    author.findById(req.params.id).populate({path:'books',select:'-author'})
+    author.findById(req.params.id).populate({ path: 'books', select: '-author' })
         .then(data => { res.status(200).json({ msg: 'done', data }) })
         .catch((err) => { res.status(500).json({ msg: 'error', error: err.message }) })
 }

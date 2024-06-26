@@ -57,66 +57,83 @@ export const addBook = async (req, res) => {
 
 export const getBooks = async (req, res) => {
 
-    let { page } = req.query
-    let search = req.query?.search
+    try {
+        let data = await book.find().maxTimeMS(30000);
+        res.status(200).json({ msg: 'done', data })
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
 
+}
 
- 
+export const getBooksPagenation = async (req, res) => {
+    let { page } = req.params
 
+    if (!page || page <= 0) {
+        res.status(500).json({ msg: 'error', error: 'page is required > 0' })
+        return
+    }
 
-    if (page) {
-        let data 
-        if (search) {
-            try {
-                 data = await book.find({
-                    $or: [
-                        {title: { $regex: search, $options: "i" }},
-                        {'author.name': { $regex: search, $options: "i" }}
-                    ]
-                }).skip((page-1)*20).limit(20).lean()
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        } else {
-            try {
-                 data = await book.find().skip((page - 1) * 20).limit(20)
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+    try {
+        let data = await book.find().skip((page - 1) * 20).limit(20)
+        if (data.length == 0) {
+            return res.json({ msg: `page not avilabel` })
+
         }
 
-        if (data.length == 0 ) {
+        res.status(200).json({ msg: 'done', data })
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+}
+
+export const getBooksSearch = async (req, res) => {
+    let search = req.query?.search
+    if(!search){
+        return res.status(500).json({ msg: 'error', error: 'searsh value is required ' })
+    }
+
+
+    try {
+        let data = await book.find(
+            {
+                $or: [
+                    {
+                        title: { $regex: search, $options: 'i' }
+                    },
+                    {
+                        'author.name': { $regex: search, $options: 'i' }
+                    }
+                ]
+            }
+        )
+
+        if (data.length == 0) {
+            return res.status(201).json({ msg: 'data not found' })
+        }
+
+        return res.status(200).json({ msg: 'done', data })
+
+
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
+
+}
+
+export const getBooksPaginationAndSearch = async (req, res) => {
+    let { page } = req.params
+    let search = req.query?.search
+    try {
+        let data = await book.find({
+            $or: [
+                { title: { $regex: search, $options: "i" } },
+                { 'author.name': { $regex: search, $options: "i" } }
+            ]
+        }).skip((page - 1) * 20).limit(20).lean()
+
+        if (data.length == 0) {
             return res.json({ msg: `page not avilabel` })
         }
         res.status(200).json({ msg: 'done', data })
 
-    } else {
-        let data 
-        if (search) {
-            try {
-                 data = await book.find(
-                    {
-                        $or: [
-                            {
-                                title: { $regex: search, $options: 'i' }
-                            },
-                            {
-                                'author.name': { $regex: search, $options: 'i' }
-                            }
-                        ]
-                    }
-                )
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        } else {
-            try {
-                data = await book.find().maxTimeMS(30000);
-            } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
-        }
-        res.status(200).json({ msg: 'done', data })
-
-    }
-
-
-
-
-
+    } catch (err) { res.status(500).json({ msg: 'error', error: err.message }) }
 }
+
 
 export const getBook = async (req, res) => {
     try {
